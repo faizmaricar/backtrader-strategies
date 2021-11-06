@@ -5,9 +5,11 @@ from datetime import datetime, timedelta
 import backtrader as bt
 
 from teststrategy import TestStrategy
+from macddmi import MacdDmi
 
 if __name__ == '__main__':
     cerebro = bt.Cerebro()
+    cerebro.addstrategy(MacdDmi)
 
     ibstore = bt.stores.IBStore(port=7497)
     
@@ -26,11 +28,16 @@ if __name__ == '__main__':
     )
     
     data = ibstore.getdata(dataname='EUR.USD', sectype='CASH', exchange='IDEALPRO', **dataargs)
+        
+    cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=1)
     
-    cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=60)
-    cerebro.addstrategy(TestStrategy)
+    cerebro.broker.setcash(100000.0)
+    cerebro.addsizer(bt.sizers.FixedSize, stake=70000)
+    
+    print('Starting portfolio value: %.2f' % cerebro.broker.getvalue())
     
     cerebro.run()
-    cerebro.plot()
-
-    print('finished')
+    
+    print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
+    
+    #cerebro.plot()
