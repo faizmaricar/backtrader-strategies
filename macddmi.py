@@ -1,3 +1,8 @@
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+from datetime import datetime, timedelta
+
 import backtrader as bt
 
 class MacdDmi(bt.Strategy):
@@ -67,11 +72,17 @@ class MacdDmi(bt.Strategy):
         ohlcv.append(str(self.data.close[0]))
         ohlcv.append(str(self.macdcross[0]))
         ohlcv.append(str(self.dmicross[0]))
-        print(', '.join(ohlcv))
+        self.log(', '.join(ohlcv))
 
-    def next(self):        
+    def next(self):
+        self.log_data()
+        
+        # Use when trading
+        # if not self.data_ready:
+        #    return
+
         if not self.position:
-            take_profit = 0.0004
+            take_profit = 0.0002
             if self.macdcross[0] > 0 and self.dmicross[0] > 0:
                 orderags = dict(
                     limitprice=self.data.close[0] + take_profit,
@@ -84,5 +95,20 @@ class MacdDmi(bt.Strategy):
                     limitprice=self.data.close[0] - take_profit,
                     price=self.data.close[0],
                 )
-                self.orders = self.sell_bracket(**orderags, stopexec=bt.Order.StopTrailLimit, trailamount=0.0001)
+                self.orders = self.sell_bracket(**orderags, stopexec=bt.Order.StopTrailLimit)
                 self.log('SELL CREATE')
+
+if __name__ == '__main__':
+    cerebro = bt.Cerebro()
+    cerebro.addstrategy(MacdDmi)
+
+    ibstore = bt.stores.IBStore(port=7497)
+    
+    cerebro.broker = ibstore.getbroker()
+    
+    data = ibstore.getdata(dataname='EUR.USD', sectype='CASH', exchange='IDEALPRO', timeframe=bt.TimeFrame.Minutes)
+        
+    cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=1)
+    cerebro.addsizer(bt.sizers.FixedSize, stake=70000)
+    
+    cerebro.run()

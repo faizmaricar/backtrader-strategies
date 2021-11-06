@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 import backtrader as bt
 
-from teststrategy import TestStrategy
 from macddmi import MacdDmi
 
 if __name__ == '__main__':
@@ -22,7 +21,7 @@ if __name__ == '__main__':
         qcheck = 0.5,
         backfill_start = True,
         backfill = True,
-        fromdate = datetime.today() - timedelta(days=365),
+        fromdate = datetime.today() - timedelta(days=30),
         latethrough = False,  
         tradename = None
     )
