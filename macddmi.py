@@ -74,28 +74,28 @@ class MacdDmi(bt.Strategy):
         ohlcv.append(str(self.dmicross[0]))
         self.log(', '.join(ohlcv))
 
-    def next(self):
-        self.log_data()
-        
+    def next(self):  
         # Use when trading
         # if not self.data_ready:
         #    return
-
+        self.log_data()
         if not self.position:
             take_profit = 0.0002
             if self.macdcross[0] > 0 and self.dmicross[0] > 0:
                 orderags = dict(
                     limitprice=self.data.close[0] + take_profit,
                     price=self.data.close[0],
+                    stopexec=bt.Order.StopTrailLimit
                 )
-                self.orders = self.buy_bracket(**orderags, stopexec=bt.Order.StopTrailLimit)
+                self.orders = self.buy_bracket(**orderags)
                 self.log('BUY CREATE')
             elif self.macdcross[0] < 0 and self.dmicross[0] < 0:
                 orderags = dict(
                     limitprice=self.data.close[0] - take_profit,
                     price=self.data.close[0],
+                    stopexec=bt.Order.StopTrailLimit
                 )
-                self.orders = self.sell_bracket(**orderags, stopexec=bt.Order.StopTrailLimit)
+                self.orders = self.sell_bracket(**orderags)
                 self.log('SELL CREATE')
 
 if __name__ == '__main__':
