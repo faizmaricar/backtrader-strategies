@@ -3,7 +3,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import backtrader as bt
 
-class MacdDmi(bt.Strategy):
+class MacdEma(bt.Strategy):
 
     params = (
         ('period_me1', 12),
@@ -13,10 +13,6 @@ class MacdDmi(bt.Strategy):
 
     def __init__(self):
         self.orders = None
-        
-        self.highest = bt.indicators.Highest(self.data.high, period=48, subplot=False)
-        self.lowest = bt.indicators.Lowest(self.data.low, period=48, subplot=False)
-
         self.macd = bt.indicators.MACD(
             self.datas[0], 
             period_me1=self.params.period_me1, 
@@ -24,11 +20,9 @@ class MacdDmi(bt.Strategy):
             period_signal=self.params.period_signal, 
             subplot=False
         )
-
-        self.dmi = bt.indicators.DirectionalMovementIndex(self.datas[0], subplot=False)
-
+        
         self.macdcross = bt.indicators.CrossOver(self.macd.macd, self.macd.signal)
-        self.dmicross = bt.indicators.CrossOver(self.dmi.plusDI, self.dmi.minusDI)
+        self.ema100 = bt.indicators.EMA(self.datas[0], period=100)
         
     def notify_data(self, data, status):
         if status == data.LIVE:
@@ -69,17 +63,16 @@ class MacdDmi(bt.Strategy):
         ohlcv.append(str(self.data.low[0]))
         ohlcv.append(str(self.data.close[0]))
         ohlcv.append(str(self.macdcross[0]))
-        ohlcv.append(str(self.dmicross[0]))
         self.log(', '.join(ohlcv))
 
     def next(self):  
         # Use when trading
         # if not self.data_ready:
         #    return
-        self.log_data()
+        # self.log_data()
         if not self.position:
-            take_profit = 0.0002
-            if self.macdcross[0] > 0 and self.dmicross[0] > 0:
+            take_profit = 0.001
+            if self.macdcross[0] > 0 and self.data.low[0] > self.ema100[0]:
                 orderags = dict(
                     limitprice=self.data.close[0] + take_profit,
                     price=self.data.close[0],
@@ -87,7 +80,7 @@ class MacdDmi(bt.Strategy):
                 )
                 self.orders = self.buy_bracket(**orderags)
                 self.log('BUY CREATE')
-            elif self.macdcross[0] < 0 and self.dmicross[0] < 0:
+            elif self.macdcross[0] < 0 and self.data.low[0] > self.ema100[0]:
                 orderags = dict(
                     limitprice=self.data.close[0] - take_profit,
                     price=self.data.close[0],
@@ -98,7 +91,7 @@ class MacdDmi(bt.Strategy):
 
 if __name__ == '__main__':
     cerebro = bt.Cerebro()
-    cerebro.addstrategy(MacdDmi)
+    cerebro.addstrategy(MacdEma)
 
     ibstore = bt.stores.IBStore(port=7497)
     
@@ -106,7 +99,7 @@ if __name__ == '__main__':
     
     data = ibstore.getdata(dataname='EUR.USD', sectype='CASH', exchange='IDEALPRO', timeframe=bt.TimeFrame.Minutes)
         
-    cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=1)
+    cerebro.resampledata(data, timeframe=bt.TimeFrame.Days)
     cerebro.addsizer(bt.sizers.FixedSize, stake=70000)
     
     cerebro.run()

@@ -1,14 +1,17 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from datetime import datetime, timedelta
+from itertools import compress
 
 import backtrader as bt
 
 from macddmi import MacdDmi
+from macdema import MacdEma
+from macdpivot import MacdPivot
 
 if __name__ == '__main__':
     cerebro = bt.Cerebro()
-    cerebro.addstrategy(MacdDmi)
+    cerebro.addstrategy(MacdPivot)
 
     ibstore = bt.stores.IBStore(port=7497)
     
@@ -23,13 +26,15 @@ if __name__ == '__main__':
         backfill = True,
         fromdate = datetime.today() - timedelta(days=30),
         latethrough = False,  
-        tradename = None
+        tradename = None,
+        compression=15
     )
     
     data = ibstore.getdata(dataname='EUR.USD', sectype='CASH', exchange='IDEALPRO', **dataargs)
-        
-    cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=1)
-    
+
+    cerebro.adddata(data) 
+    resampledData = cerebro.resampledata(data, timeframe=bt.TimeFrame.Days, compression=3)
+    resampledData.plotinfo.plot = False
     cerebro.broker.setcash(100000.0)
     cerebro.addsizer(bt.sizers.FixedSize, stake=70000)
     
@@ -39,4 +44,4 @@ if __name__ == '__main__':
     
     print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
     
-    #cerebro.plot()
+    cerebro.plot()
