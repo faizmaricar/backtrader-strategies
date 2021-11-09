@@ -19,11 +19,18 @@ class MacdPivot(bt.Strategy):
 
         if order.status in [order.Completed]:
             if order.isbuy():
-                self.log('BUY EXECUTED Price: %.5f' % order.executed.price)
+                self.log(
+                    'BUY EXECUTED, Price: %.5f, Cost: %.5f, Comm %.5f' %
+                    (order.executed.price,
+                     order.executed.value,
+                     order.executed.comm))
                 self.buyprice = order.executed.price
                 self.buycomm = order.executed.comm
             else:
-                self.log('SELL EXECUTED Price: %.5f' % order.executed.price)
+                self.log('SELL EXECUTED, Price: %.5f, Cost: %.5f, Comm %.5f' %
+                         (order.executed.price,
+                          order.executed.value,
+                          order.executed.comm))
 
             self.bar_executed = len(self)
 
@@ -67,5 +74,5 @@ if __name__ == '__main__':
     cerebro.adddata(data)
     cerebro.resampledata(data, timeframe=bt.TimeFrame.Days, compression=1)
     cerebro.addsizer(bt.sizers.FixedSize, stake=70000)
-    
+
     cerebro.run()
